@@ -22,7 +22,13 @@ coords <- cbind(allsites$Longitude, allsites$Latitude)
 
 # Function to get the list of tables from the database
 get_table_list <- function(conn) {
-    alltables <- DBI::dbListTables(conn)
+    check.conn(conn)
+    alltables <- tryCatch(DBI::dbListTables(conn),error=function(e){
+            print("pb during connection")
+            disco <- disconnect()
+            conn <- init.conn(db.credentials=db.credential)
+            assign("conn",conn,envir = .GlobalEnv)
+    })
     alltables[!grepl("z.*_.*",alltables)]
 }
 

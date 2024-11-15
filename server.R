@@ -46,6 +46,8 @@ shinyServer(function(input, output, session) {
   observe({
     tables <- c("Sites", tables[tables != "Sites"])  # Start with "Sites" and append other tables
     updateSelectInput(session, "table", choices = tables)
+    mainKey <<- "SiteID"
+    primaryKey <<- "SiteID"
   })
 
   observeEvent(input$table, {
