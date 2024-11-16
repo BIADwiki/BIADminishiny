@@ -74,13 +74,12 @@ shinyServer(function(input, output, session) {
     if (nchar(location) > 0 && !is.null(selected_table) && !is.null(selected_field)) {
       # Construct a SQL query with the selected field and location
       query <- paste0("SELECT * FROM ",selected_table," WHERE ",selected_field," LIKE '%",location,"%'")
-      print(query)
-      result <- query.database(query,conn)
+      result <- query.database(sql.command = query,conn = conn)
       
       # Store result in reactive variable
       if (!is.null(result) && nrow(result) > 0) {
          resultData(result)  # Update reactive value
-         primaryKey <- get.primary.column.from.table(table.name = selected_table)
+         primaryKey <- get.primary.column.from.table(table.name = selected_table, conn = conn)
          mainKey <<- primaryKey
 
          # Generate UI for each primary key in the result

@@ -16,7 +16,6 @@ allsites=readRDS("../data/sites_table.RDS")
 # Register your Google Maps API key
 register_google(key = Sys.getenv("GMAP_API"))#attention ac ma clef
 
-conn <- init.conn()
 
 coords <- cbind(allsites$Longitude, allsites$Latitude)
 
@@ -37,4 +36,6 @@ get_field_list <- function(conn, table) {
     DBI::dbListFields(conn, table)
 }
 
+conn <<- init.conn()
 tables <- get_table_list(conn)
+
