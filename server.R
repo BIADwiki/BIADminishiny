@@ -35,6 +35,16 @@ resetMap <- function(){
     leafletProxy("map") |> clearMarkers() |> clearShapes() |> setView(lng = 10, lat = 50, zoom = 4)
 }
 
+buttonList <- function(keys,keytype){
+    card(
+     card_header(paste(keytype,"found:")),
+      card_body(
+                     fillable = FALSE,
+     lapply(keys, function(key){ actionButton(inputId = paste0("key_", key), label = key)})
+     )
+    )
+}
+
 shinyServer(function(input, output, session) {
   print(Sys.time())
 
@@ -44,6 +54,7 @@ shinyServer(function(input, output, session) {
   })
 
   observe({
+    print(input$tabpan)
     tables <- c("Sites", tables[tables != "Sites"])  # Start with "Sites" and append other tables
     updateSelectInput(session, "table", choices = tables)
     mainKey <<- "SiteID"
@@ -83,11 +94,9 @@ shinyServer(function(input, output, session) {
          mainKey <<- primaryKey
 
          # Generate UI for each primary key in the result
-         output$key_buttons <- renderUI({fluidRow(h4("Sites Found"),
-           lapply(result[, primaryKey], function(key) {
-              actionButton(inputId = paste0("key_", key), label = key)
-           })
-         )})
+         output$key_buttons <- renderUI({
+             buttonList(result[, primaryKey],selected_table)
+         })
         result <- resultData()
         if (!is.null(result) && nrow(result) > 0 ) {
             if(selected_table == "Sites"){
@@ -151,11 +160,8 @@ shinyServer(function(input, output, session) {
            setView(lat = as.numeric(user_coords["Latitude"]),lng = as.numeric(user_coords["Longitude"]), zoom=8) 
         if(nrow(result)>0){
             updateSitesOnMap(result)
-            # Iterate over each primary key
             output$key_buttons <- renderUI({
-                lapply(result[, "SiteID"], function(key) {
-                           actionButton(inputId = paste0("key_", key), label = key)
-                      })
+                buttonList(result[, primaryKey],"Site")
             })
         }
         resultData(result)  # Update result data
@@ -172,9 +178,9 @@ shinyServer(function(input, output, session) {
       get_json <- reactive({
           treeToJSON(FromListSimple(x), pretty = TRUE)
       })
-      output$downtree <- renderUI("Down tree")
       output$siteTree <- renderTree(get_json())
       output$selTxt <- DT::renderDT({
+          alldatas=NULL
           tree <- input$siteTree
           if (is.null(tree)){
               NULL
@@ -188,10 +194,10 @@ shinyServer(function(input, output, session) {
                       }
                       return(data$data)
                   }
-   	  		else array(dim=c(0,0))
+                  else array(dim=c(0,0))
               })
-   	  	if(length(alldatas)>0)return(alldatas[[1]])
-   	  	else NULL
+           if(length(alldatas)>0)return(alldatas[[1]])
+           else NULL
           }
       })
   })
