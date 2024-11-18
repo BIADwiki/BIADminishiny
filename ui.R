@@ -10,7 +10,7 @@ ui <- page_fluid(
   titlePanel("Let's dig BIAD a bit..."),
   layout_sidebar(
     sidebar=sidebar( 
-      width = 650,
+      width = "30%",
     navset_card_underline(id='tabpan',
         nav_panel(
            title="Fuzzy Search",

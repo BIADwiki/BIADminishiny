@@ -54,12 +54,20 @@ shinyServer(function(input, output, session) {
   })
 
   observe({
-    print(input$tabpan)
     tables <- c("Sites", tables[tables != "Sites"])  # Start with "Sites" and append other tables
     updateSelectInput(session, "table", choices = tables)
     mainKey <<- "SiteID"
     primaryKey <<- "SiteID"
   })
+
+  observeEvent(input$tabpan,{
+    print(input$tabpan)
+    output$siteTree <- renderTree(NULL)
+    output$selTxt <- DT::renderDT(NULL)
+    output$key_buttons <- renderUI(NULL)
+    resetMap()
+  })
+
 
   observeEvent(input$table, {
     fields <- get_field_list(conn, input$table)
