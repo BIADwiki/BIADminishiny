@@ -35,13 +35,13 @@ resetMap <- function(){
     leafletProxy("map") |> clearMarkers() |> clearShapes() |> setView(lng = 10, lat = 50, zoom = 4)
 }
 
-buttonList <- function(keys,keytype){
+buttonList <- function(keys=NULL,keytype){
+    if(is.null(keys))return(card())
     card(
-     card_header(paste(keytype,"found:")),
-      card_body(
-                     fillable = FALSE,
-     lapply(keys, function(key){ actionButton(inputId = paste0("key_", key), label = key)})
-     )
+         card_header(paste(keytype,"found:")),
+         card_body( fillable = FALSE,
+                   lapply(keys, function(key){ actionButton(inputId = paste0("key_", key), label = key)})
+         )
     )
 }
 
@@ -64,7 +64,7 @@ shinyServer(function(input, output, session) {
     print(input$tabpan)
     output$siteTree <- renderTree(NULL)
     output$selTxt <- DT::renderDT(NULL)
-    output$key_buttons <- renderUI(NULL)
+    output$key_buttons <- renderUI(buttonList())
     resetMap()
   })
 
@@ -82,7 +82,7 @@ shinyServer(function(input, output, session) {
   # Logic triggered by Find Matches button
   observeEvent(input$find_matches, {
     output$siteTree <- renderTree(NULL)
-    output$key_buttons <- renderUI(NULL)
+    output$key_buttons <- renderUI(buttonList())
     resetMap()
     location <- input$location
     selected_table <- input$table
@@ -102,9 +102,7 @@ shinyServer(function(input, output, session) {
          mainKey <<- primaryKey
 
          # Generate UI for each primary key in the result
-         output$key_buttons <- renderUI({
-             buttonList(result[, primaryKey],selected_table)
-         })
+         output$key_buttons <- renderUI({ buttonList(result[, primaryKey],selected_table) })
         result <- resultData()
         if (!is.null(result) && nrow(result) > 0 ) {
             if(selected_table == "Sites"){
@@ -125,7 +123,7 @@ shinyServer(function(input, output, session) {
       } else {
         resultData(NULL)  # Clear reactive value
         output$selTxt <- renderPrint(print("No results found"))
-        output$key_buttons <- renderPrint(print("No results found"))
+        output$key_buttons <- renderUI(buttonList())
       }
     }
   })
@@ -133,7 +131,7 @@ shinyServer(function(input, output, session) {
   observeEvent(input$find_matches_dis, {
     mainKey <<- "SiteID"
     output$siteTree <- renderTree(NULL)
-    output$key_buttons <- renderUI(NULL)
+    output$key_buttons <- renderUI(buttonList())
     print(input$name)
     print(input$latitude)
     print(input$longitude)
@@ -269,13 +267,9 @@ shinyServer(function(input, output, session) {
       distances <- distm(x = coords, y = user_coords, fun = distHaversine)
       result <- allsites[distances <= input$distance * 1000, ,drop=F] # Convert km to meters
       if(nrow(result)>0){
-         resultData(result)  # Update reactive value
+          resultData(result)  # Update reactive value
           updateSitesOnMap(result)
-          output$key_buttons <- renderUI({
-              lapply(result[, "SiteID"], function(key) {
-                  actionButton(inputId = paste0("key_", key), label = key)
-              })
-          })
+          output$key_buttons <- renderUI( buttonList(result[,"SiteID"],"Site"))
       }
   })
 
