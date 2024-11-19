@@ -109,13 +109,11 @@ shinyServer(function(input, output, session) {
                 updateSitesOnMap(result)
             }
             else{
--                sites <- sapply(result[,primaryKey],function(key)get_elements(get.relatives(table.name=selected_table,primary.value=key,conn=conn),"Sites"))
-
-
-				sites <- t(sapply(sites,function(i)i[,c("SiteID","SiteName","Latitude","Longitude")]))
-				sites <- cbind.data.frame(sites, notes=paste0(primaryKey,": ",result[,primaryKey],","))
+                sites <- sapply(result[,primaryKey],function(key)get_elements(get.relatives(table.name=selected_table,primary.value=key,conn=conn),"Sites"))
+                sites <- t(sapply(sites,function(i)i[,c("SiteID","SiteName","Latitude","Longitude")]))
+                sites <- cbind.data.frame(sites, notes=paste0(primaryKey,": ",result[,primaryKey],","))
                 updateSitesOnMap(sites)
-			}
+            }
 
         } else {
           # Optionally provide feedback if there are no results to show
