@@ -109,7 +109,8 @@ shinyServer(function(input, output, session) {
                 updateSitesOnMap(result)
             }
             else{
-                sites <- sapply(result[,primaryKey],function(key)get_elements(run.searcher(table.name=selected_table,primary.value=key,conn=conn,direction="up"),"Sites"))
+-                sites <- sapply(result[,primaryKey],function(key)get_elements(get.relatives(table.name=selected_table,primary.value=key,conn=conn),"Sites"))
+
 
 				sites <- t(sapply(sites,function(i)i[,c("SiteID","SiteName","Latitude","Longitude")]))
 				sites <- cbind.data.frame(sites, notes=paste0(primaryKey,": ",result[,primaryKey],","))
@@ -179,7 +180,7 @@ shinyServer(function(input, output, session) {
       result <- resultData()
       click <- input$map_marker_click
       if(is.null(click)) return()
-      x <- run.searcher(table.name = input$table, primary.value = click$id, conn = conn, direction = "down")$down
+      x <- get.relatives(table.name = input$table, primary.value = click$id, conn = conn)
       #updateSitesOnMap(result,click$id)
       get_json <- reactive({
           treeToJSON(FromListSimple(x), pretty = TRUE)
@@ -216,7 +217,7 @@ shinyServer(function(input, output, session) {
           # Iterate over each primary key
           lapply(result[, primaryKey], function(key) {
              observeEvent(input[[paste0("key_", key)]], {
-                x <- run.searcher(table.name = input$table, primary.value = key, conn = conn, direction = "down")$down
+                x <- get.relatives(table.name = input$table, primary.value = key, conn = conn)
                 if(input$table == "Sites"){
                     #output$map <- renderSitesOnMap(result,key)
                     updateSitesOnMap(result,key)
