@@ -75,6 +75,7 @@ buttonList <- function(keys=NULL,keytype){
 
 shinyServer(function(input, output, session) {
   print(Sys.time())
+  check.conn(conn)
 
   userCoords <- reactiveVal(NULL)  # Hold the user coordinates
   output$map <- renderLeaflet({
