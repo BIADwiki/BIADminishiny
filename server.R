@@ -1,11 +1,36 @@
 
 get_elements <- function(x, element) {
+    print("get elmt")
 	newlist=list()
 	for(elt in names(x)){
 		if(elt == element) newlist=append(newlist,x[[elt]])
 		else if(is.list(x[[elt]])) newlist=append(newlist,get_elements(x[[elt]],element) )
 	}
 	return(newlist)
+}
+
+extractData <- function(tree,selected){
+    print("treexpl")
+    if (is.null(tree)){
+        NULL
+    } else{
+        print("bloqued?")
+        alldatas=lapply(get_selected(tree),function(node){
+            if(node == 'data'){
+                uptree=attr(node, "ancestry")
+                data=selected
+                print(uptree)
+                for(i in 1:length(uptree)){
+                    data=data[[uptree[i]]]
+                }
+                return(data$data)
+            }
+            else array(dim=c(0,0))
+        })
+        print("no..")
+        if(length(alldatas)>0)return(alldatas[[1]])
+        else NULL
+    }
 }
 
 renderSitesOnMap <- function(df,  key = NULL){
@@ -36,13 +61,16 @@ resetMap <- function(){
 }
 
 buttonList <- function(keys=NULL,keytype){
+    print("buttonlist")
     if(is.null(keys))return(card())
-    card(
+    res=card(
          card_header(paste(keytype,"found:")),
          card_body( fillable = FALSE,
                    lapply(keys, function(key){ actionButton(inputId = paste0("key_", key), label = key)})
          )
     )
+    print("done button")
+    return(res)
 }
 
 shinyServer(function(input, output, session) {
@@ -54,6 +82,7 @@ shinyServer(function(input, output, session) {
   })
 
   observe({
+    print("listsite")
     tables <- c("Sites", tables[tables != "Sites"])  # Start with "Sites" and append other tables
     updateSelectInput(session, "table", choices = tables)
     mainKey <<- "SiteID"
@@ -82,12 +111,12 @@ shinyServer(function(input, output, session) {
   # Logic triggered by Find Matches button
   observeEvent(input$find_matches, {
     output$siteTree <- renderTree(NULL)
+    output$selTxt <- DT::renderDT(NULL)
     output$key_buttons <- renderUI(buttonList())
     resetMap()
     location <- input$location
     selected_table <- input$table
     selected_field <- input$field
-    output$selTxt <- renderUI(NULL)
     result <- NULL
     
     if (nchar(location) > 0 && !is.null(selected_table) && !is.null(selected_field)) {
@@ -97,12 +126,12 @@ shinyServer(function(input, output, session) {
       
       # Store result in reactive variable
       if (!is.null(result) && nrow(result) > 0) {
-         resultData(result)  # Update reactive value
-         primaryKey <- get.primary.column.from.table(table.name = selected_table, conn = conn)
-         mainKey <<- primaryKey
+        resultData(result)  # Update reactive value
+        primaryKey <- get.primary.column.from.table(table.name = selected_table, conn = conn)
+        mainKey <<- primaryKey
 
-         # Generate UI for each primary key in the result
-         output$key_buttons <- renderUI({ buttonList(result[, primaryKey],selected_table) })
+        # Generate UI for each primary key in the result
+        output$key_buttons <- renderUI({ buttonList(result[, primaryKey],selected_table) })
         result <- resultData()
         if (!is.null(result) && nrow(result) > 0 ) {
             if(selected_table == "Sites"){
@@ -117,11 +146,11 @@ shinyServer(function(input, output, session) {
 
         } else {
           # Optionally provide feedback if there are no results to show
-          output$selTxt <- renderPrint(print( "No results to show on map" ))
+          output$selTxt <- DT::renderDT(NULL)
         }
       } else {
         resultData(NULL)  # Clear reactive value
-        output$selTxt <- renderPrint(print("No results found"))
+        output$selTxt <- DT::renderDT(NULL)
         output$key_buttons <- renderUI(buttonList())
       }
     }
@@ -173,41 +202,29 @@ shinyServer(function(input, output, session) {
     }
   })
 
-  observe({ 
-      req(resultData())
-      result <- resultData()
+  #maybe should use a reactive value and change only 'key'and leave other observer to do the jon
+  observeEvent(input$map_marker_click,{ 
+      print("tada?")
       click <- input$map_marker_click
       if(is.null(click)) return()
+      print("getrel click")
       x <- get.relatives(table.name = input$table, primary.value = click$id, conn = conn)
-      #updateSitesOnMap(result,click$id)
+      print("end getrel click")
       get_json <- reactive({
           treeToJSON(FromListSimple(x), pretty = TRUE)
       })
+      print("render tree click")
       output$siteTree <- renderTree(get_json())
       output$selTxt <- DT::renderDT({
-          alldatas=NULL
           tree <- input$siteTree
-          if (is.null(tree)){
-              NULL
-          } else{
-              alldatas=lapply(get_selected(tree),function(node){
-                  if(node == 'data'){
-                      uptree=attr(node, "ancestry")
-                      data=x
-                      for(i in 1:length(uptree)){
-                          data=data[[uptree[i]]]
-                      }
-                      return(data$data)
-                  }
-                  else array(dim=c(0,0))
-              })
-           if(length(alldatas)>0)return(alldatas[[1]])
-           else NULL
-          }
+          print("heee")
+          extractData(tree,x)
       })
+      print("end render tree click")
   })
 
   observe({
+      print("boom")
       req(resultData())
       primaryKey <- mainKey
       result <- resultData()
@@ -215,44 +232,33 @@ shinyServer(function(input, output, session) {
           # Iterate over each primary key
           lapply(result[, primaryKey], function(key) {
              observeEvent(input[[paste0("key_", key)]], {
+                              print("getrel gen")
                 x <- get.relatives(table.name = input$table, primary.value = key, conn = conn)
+                              print("end getrel gen")
                 if(input$table == "Sites"){
                     #output$map <- renderSitesOnMap(result,key)
                     updateSitesOnMap(result,key)
                 }
+      print("render tree gen")
                 get_json <- reactive({
                     treeToJSON(FromListSimple(x), pretty = TRUE)
                 })
                 output$siteTree <- renderTree(get_json())
                 output$selTxt <- DT::renderDT({
                     tree <- input$siteTree
-                    if (is.null(tree)){
-                        NULL
-                    } else{
-                        alldatas=lapply(get_selected(tree),function(node){
-                            if(node == 'data'){
-                                uptree=attr(node, "ancestry")
-                                data=x
-                                for(i in 1:length(uptree)){
-                                    data=data[[uptree[i]]]
-                                }
-                                return(data$data)
-                            }
-							else array(dim=c(0,0))
-                        })
-						if(length(alldatas)>0)return(alldatas[[1]])
-						else NULL
-                    }
+                    extractData(tree,x)
                 })
+      print("end render tree gen")
           })
 
-      })
+        })
       }
 	  else{
 		  output$siteTree <- renderUI(NULL)
 		  output$selTxt <- renderUI(NULL)
 	  }
   })
+  
   observeEvent(input$distance, {
       user_coords <- userCoords()
       if(is.null(user_coords)) return()()
