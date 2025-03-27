@@ -6,8 +6,12 @@ library(bslib)
 #shinyUI(fluidPage(
 #  titlePanel("Let's dig BIAD a bit..."),
 ui <- page_fluid(
-  title="BIAD exploration",
-  titlePanel("Let's dig BIAD a bit..."),
+  title="BIAD mini shiny",
+  titlePanel(
+    title = div(
+      img(src = "https://biadwiki.org/biad.logo.png", height = "60px", style = "margin-right: 10px;"),
+      "A minimal Shiny app for BIAD"
+    )),
   layout_sidebar(
     sidebar=sidebar( 
       width = "30%",
