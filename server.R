@@ -1,5 +1,6 @@
 
 get_elements <- function(x, element) {
+coords <- cbind(allsites$Longitude, allsites$Latitude)
     print("get elmt")
 	newlist=list()
 	for(elt in names(x)){
@@ -122,8 +123,15 @@ shinyServer(function(input, output, session) {
     
     if (nchar(location) > 0 && !is.null(selected_table) && !is.null(selected_field)) {
       # Construct a SQL query with the selected field and location
-      query <- paste0("SELECT * FROM ",selected_table," WHERE ",selected_field," LIKE '%",location,"%'")
+      query <- paste0("SELECT * FROM ",selected_table," WHERE ",selected_field," LIKE '%",location,"%' LIMIT 15")
       result <- query.database(sql.command = query,conn = conn)
+      if (nrow(result)==15) {
+         showModal(modalDialog(
+                   title = "Limit reached",
+                   "Only 15 first results are shown!",
+                   easyClose = TRUE
+                   ))
+      }
       
       # Store result in reactive variable
       if (!is.null(result) && nrow(result) > 0) {
@@ -184,6 +192,15 @@ shinyServer(function(input, output, session) {
         userCoords(user_coords)  # Update result data
         distances <- distm(x = coords, y = user_coords, fun = distHaversine)
         result <- allsites[distances <= input$distance * 1000, ,drop=F] # Convert km to meters
+        print(nrow(result))
+        if (nrow(result)>24) {
+            result <- result[1:25,]
+            showModal(modalDialog(
+                                  title = "Too much neighbours",
+                                  "Only the 25 closest sites are shown",
+                                  easyClose = TRUE
+                                  ))
+        }
         leafletProxy("map",session) |>
            addCircleMarkers(lng = user_coords["Longitude"], lat = user_coords["Latitude"], popup = "POI", color = "green") |>
            #fitBounds(lng1 = lng_min, lat1 = lat_min, lng2 = lng_max, lat2 = lat_max) |>

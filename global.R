@@ -4,20 +4,14 @@ library(ggmap)
 library(geosphere) 
 library(shinyTree)
 library(data.tree)
-source("../R/functions.R")
-source("../R/functions.database.connect.R")
-library(shinybusy)
+#devtools::install_github("simoncarrignon/BIADconnect",force=TRUE)
+library(BIADconnect)
 
-add_busy_bar(color = "#FF0000",timeout=1000)
 
 # Register your Google Maps API key
-allsites=readRDS("../data/sites_table.RDS")
-
-# Register your Google Maps API key
-register_google(key = Sys.getenv("GMAP_API"))#attention ac ma clef
+ggmap::register_google(key = Sys.getenv("GMAP_API"))#attention ac ma clef
 
 
-coords <- cbind(allsites$Longitude, allsites$Latitude)
 
 # Function to get the list of tables from the database
 get_table_list <- function(conn) {
@@ -37,5 +31,11 @@ get_field_list <- function(conn, table) {
 }
 
 conn <<- init.conn()
+allsites=tryCatch(
+     readRDS("../data/sites_table.RDS")
+ ,error=function(e){
+     query.database("SELECT * FROM Sites;",conn=conn)
+})
+coords <- cbind(allsites$Longitude, allsites$Latitude)
 tables <- get_table_list(conn)
 
