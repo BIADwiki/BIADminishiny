@@ -6,13 +6,12 @@ library(shinycssloaders)
 
 ui <- page_sidebar(
     theme = bs_theme(bootswatch = "pulse"),
-    title = div( tags$a(href="http://biadwiki.org:3838/BIADminishiny/",tags$img(src = "favicon.ico", height = "60px")),
-                "A minimal Shiny app for BIAD",
-                ) ,
+    title =  div(a(href="http://biadwiki.org:3838/BIADminishiny/",img(src = "favicon.ico", height = "121px"),style = "text-decoration: none; color: inherit;"),
+                "A minimal Shiny app for BIAD",class = "fw-bold p-0 m-0",style="font-size:30pt") ,
     sidebar=sidebar( 
       bg = "#1976D2",
       width = "20%",
-    navset_card_underline(id='tabpan',
+      navset_card_underline(id='tabpan',
         nav_panel(
            title="Fuzzy Search",
            selectInput("table", "In which table is the element you are looking for?", choices = get_table_list(conn)),
@@ -34,24 +33,15 @@ ui <- page_sidebar(
            )
         )
       ),
-        card(
-             shinycssloaders::withSpinner(uiOutput("key_buttons"),proxy.height="80px"), # Output for clickable primary key buttons
-             shinyTree("siteTree")
-        ),
+      card(
+           shinycssloaders::withSpinner(uiOutput("key_buttons"),proxy.height="80px"), # Output for clickable primary key buttons
+           shinyTree("siteTree")
+      ),
     ),      
-   
     card(
          card_header("Spatial Distribution"),
          card_body(leafletOutput("map")),
          card_footer(DT::DTOutput("selTxt"))
     )
- # fluidRow(
- #          card(
- #      column(width=12,
- #             br(),
- #             DT::DTOutput("selTxt")
- #      )
- #  )
- # )
 )
 
