@@ -4,23 +4,14 @@ library(shinyTree)
 library(bslib)
 library(shinycssloaders)
 
-
-ui <- page_fluid(
-  title="BIAD mini shiny",
- theme = bs_theme(
-     base_font = font_google("Inter"),
-   ),
-  titlePanel(
-    title = div(
-      a(href="http://biadwiki.org:3838/BIADminishiny/",img(src = "https://biadwiki.org/biad.logo.png", height = "60px", style = "margin-right: 10px;")),
-      "A minimal Shiny app for BIAD"
-    ) ,
-     #bg = "black"
-    ),
-  layout_sidebar(
+ui <- page_sidebar(
+    theme = bs_theme(bootswatch = "pulse"),
+    title = div( tags$a(href="http://biadwiki.org:3838/BIADminishiny/",tags$img(src = "favicon.ico", height = "60px")),
+                "A minimal Shiny app for BIAD",
+                ) ,
     sidebar=sidebar( 
-      width = "30%",
       bg = "#1976D2",
+      width = "20%",
     navset_card_underline(id='tabpan',
         nav_panel(
            title="Fuzzy Search",
@@ -44,18 +35,23 @@ ui <- page_fluid(
         )
       ),
         card(
-            withSpinner(uiOutput("key_buttons")), # Output for clickable primary key buttons
-            shinyTree("siteTree")
+             shinycssloaders::withSpinner(uiOutput("key_buttons"),proxy.height="80px"), # Output for clickable primary key buttons
+             shinyTree("siteTree")
         ),
     ),      
-    
-      leafletOutput("map")
-  ),
-  fluidRow(
-       column(width=12,
-              br(),
-              DT::DTOutput("selTxt")
-       )
-  )
+   
+    card(
+         card_header("Spatial Distribution"),
+         card_body(leafletOutput("map")),
+         card_footer(DT::DTOutput("selTxt"))
+    )
+ # fluidRow(
+ #          card(
+ #      column(width=12,
+ #             br(),
+ #             DT::DTOutput("selTxt")
+ #      )
+ #  )
+ # )
 )
 
