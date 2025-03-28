@@ -1,7 +1,7 @@
 
 
 get_elements <- function(x, element) {
-    print("get elmt")
+    #print("get elmt")
 	newlist=list()
 	for(elt in names(x)){
 		if(elt == element) newlist=append(newlist,x[[elt]])
@@ -130,8 +130,8 @@ shinyServer(function(input, output, session) {
       query <- paste0("SELECT * FROM ",selected_table," WHERE ",selected_field," LIKE '%",location,"%' LIMIT 15")
         print(paste0("running",query))
       result <- query.database(sql.command = query,conn = conn)
-      print(result)
-      print(paste0("found ",nrow(result)," matches"))
+      #print(result)
+      #print(paste0("found ",nrow(result)," matches"))
       
       # Store result in reactive variable
       if (!is.null(result) && nrow(result) > 0) {
@@ -158,7 +158,7 @@ shinyServer(function(input, output, session) {
             }
             else{
                 print(paste("look for sites :",primaryKey,selected_table))
-                print(result[1:min(5,nrow(result)),])
+                #print(result[1:min(5,nrow(result)),])
                 sites <- sapply(result[,primaryKey],function(key)get_elements(get.relatives(table.name=selected_table,primary.value=as.character(key),conn=conn),"Sites"))
                 print("displaying sites ")
                 print(sites)
