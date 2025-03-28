@@ -280,28 +280,28 @@ shinyServer(function(input, output, session) {
           lapply(result[, primaryKey], function(key) {
 		#print(paste0("whatiskey",key))
              observeEvent(input[[paste0("key_", key)]], {
-							  print("getrel gen")
-							  x <- get.relatives(table.name = input$table, primary.value = as.character(key), conn = conn)
-							  print("end getrel gen")
-							  if(input$table == "Sites"){
-								  updateSitesOnMap(result,key)
-							  }
-							  else{
-								  site_key <- get_elements(x,"Sites")[["data"]][,"SiteID"]
-								  print(paste0("whatis site_key",site_key))
-								  sites <- siteData()
-								  updateSitesOnMap(sites,site_key)
-							  }
-							  print("render tree gen")
-							  get_json <- reactive({
-								  treeToJSON(FromListSimple(x), pretty = TRUE)
-							  })
-							  output$siteTree <- renderTree(get_json())
-							  output$selTxt <- DT::renderDT({
-								  tree <- input$siteTree
-								  extractData(tree,x)
-							  })
-							  print("end render tree gen")
+				print("getrel gen")
+				x <- get.relatives(table.name = input$table, primary.value = as.character(key), conn = conn)
+				print("end getrel gen")
+				if(input$table == "Sites"){
+				    updateSitesOnMap(result,key)
+				}
+				else{
+				    site_key <- get_elements(x,"Sites")[["data"]][,"SiteID"]
+				    print(paste0("whatis site_key",site_key))
+				    sites <- siteData()
+				    updateSitesOnMap(sites,site_key)
+				}
+				print("render tree gen")
+				get_json <- reactive({
+				    treeToJSON(FromListSimple(x), pretty = TRUE)
+				})
+				output$siteTree <- renderTree(get_json())
+				output$selTxt <- DT::renderDT({
+				    tree <- input$siteTree
+				    extractData(tree,x)
+				})
+				print("end render tree gen")
           })
 
         })
