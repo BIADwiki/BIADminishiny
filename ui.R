@@ -2,19 +2,22 @@ library(shiny)
 library(leaflet)
 library(shinyTree)
 library(bslib)
+library(shinycssloaders)
 
-#shinyUI(fluidPage(
-#  titlePanel("Let's dig BIAD a bit..."),
+
 ui <- page_fluid(
   title="BIAD mini shiny",
   titlePanel(
     title = div(
       img(src = "https://biadwiki.org/biad.logo.png", height = "60px", style = "margin-right: 10px;"),
       "A minimal Shiny app for BIAD"
-    )),
+    ) ,
+     #bg = "black"
+    ),
   layout_sidebar(
     sidebar=sidebar( 
       width = "30%",
+      bg = "#1976D2",
     navset_card_underline(id='tabpan',
         nav_panel(
            title="Fuzzy Search",
@@ -39,7 +42,7 @@ ui <- page_fluid(
       ),
         card(
             uiOutput("key_buttons"), # Output for clickable primary key buttons
-            shinyTree("siteTree")
+            withSpinner(shinyTree("siteTree"))
         ),
     ),      
     
