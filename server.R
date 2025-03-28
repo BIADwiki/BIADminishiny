@@ -67,7 +67,7 @@ buttonList <- function(keys=NULL,keytype,count=NULL){
 
     if(is.null(keys))return(card())
     res=card(
-         card_header(paste(keytype,"found",ifelse(is.null(count),":",paste0("(15 shown among",count,"):")))),
+         card_header(paste(keytype,"found",ifelse(is.null(count),":",paste0("(15 shown among ",count,"):")))),
          card_body( fillable = FALSE,
                    lapply(keys, function(key){ actionButton(inputId = paste0("key_", key), label = key)})
          )
@@ -178,9 +178,10 @@ shinyServer(function(input, output, session) {
 
         } else {
           # Optionally provide feedback if there are no results to show
-          output$selTxt <- DT::renderDT(NULL)
+			output$selTxt <- DT::renderDT(NULL)
         }
       } else {
+		  showModal(modalDialog( title = "Nothing", paste0("No match!"), easyClose = TRUE, footer = modalButton("OK")))
         resultData(NULL)  # Clear reactive value
         output$selTxt <- DT::renderDT(NULL)
         output$key_buttons <- renderUI(buttonList())
@@ -242,6 +243,8 @@ shinyServer(function(input, output, session) {
                 buttonList(result[, primaryKey],"Site",count=count)
             })
         }
+        else
+			showModal(modalDialog( title = "Nothing", paste0("No sites found"), easyClose = TRUE, footer = modalButton("OK")))
         resultData(result)  # Update result data
     }
   })
@@ -326,6 +329,8 @@ shinyServer(function(input, output, session) {
           updateSitesOnMap(result)
           output$key_buttons <- renderUI( buttonList(result[,"SiteID"],"Site"))
       }
+        else
+			showModal(modalDialog( title = "Nothing", paste0("No sites found"), easyClose = TRUE, footer = modalButton("OK")))
   })
 
 
