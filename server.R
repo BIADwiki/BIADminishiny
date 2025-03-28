@@ -1,6 +1,6 @@
 
+
 get_elements <- function(x, element) {
-coords <- cbind(allsites$Longitude, allsites$Latitude)
     print("get elmt")
 	newlist=list()
 	for(elt in names(x)){
@@ -47,6 +47,7 @@ renderSitesOnMap <- function(df,  key = NULL){
 }
 
 updateSitesOnMap <- function(df,  key = NULL){
+    print("hmhm?")
     colors="blue"
     if(!is.null(key)) colors = ifelse(df[["SiteID"]] == key, 'red', 'blue') # Change color for selected key
     if(is.null(df$notes)) df$notes = ""
@@ -63,6 +64,8 @@ resetMap <- function(){
 
 buttonList <- function(keys=NULL,keytype){
     print("buttonlist")
+    print(keys)
+
     if(is.null(keys))return(card())
     res=card(
          card_header(paste(keytype,"found:")),
@@ -120,36 +123,49 @@ shinyServer(function(input, output, session) {
     selected_table <- input$table
     selected_field <- input$field
     result <- NULL
+    print("going for the query")
     
     if (nchar(location) > 0 && !is.null(selected_table) && !is.null(selected_field)) {
       # Construct a SQL query with the selected field and location
       query <- paste0("SELECT * FROM ",selected_table," WHERE ",selected_field," LIKE '%",location,"%' LIMIT 15")
+        print(paste0("running",query))
       result <- query.database(sql.command = query,conn = conn)
-      if (nrow(result)==15) {
-         showModal(modalDialog(
-                   title = "Limit reached",
-                   "Only 15 first results are shown!",
-                   easyClose = TRUE
-                   ))
-      }
+      print(result)
+      print(paste0("found ",nrow(result)," matches"))
       
       # Store result in reactive variable
       if (!is.null(result) && nrow(result) > 0) {
-        resultData(result)  # Update reactive value
+          if (nrow(result)==15) {
+              showModal(modalDialog(
+                                    title = "Limit reached",
+                                    "Only 15 first results are shown!",
+                                    easyClose = TRUE
+                                    ))
+          }
+          print("pass results")
+          resultData(result)  # Update reactive value
         primaryKey <- get.primary.column.from.table(table.name = selected_table, conn = conn)
         mainKey <<- primaryKey
 
         # Generate UI for each primary key in the result
+          print("generate button")
         output$key_buttons <- renderUI({ buttonList(result[, primaryKey],selected_table) })
+          print("button done")
         result <- resultData()
         if (!is.null(result) && nrow(result) > 0 ) {
             if(selected_table == "Sites"){
                 updateSitesOnMap(result)
             }
             else{
-                sites <- sapply(result[,primaryKey],function(key)get_elements(get.relatives(table.name=selected_table,primary.value=key,conn=conn),"Sites"))
+                print(paste("look for sites :",primaryKey,selected_table))
+                print(result[1:min(5,nrow(result)),])
+                sites <- sapply(result[,primaryKey],function(key)get_elements(get.relatives(table.name=selected_table,primary.value=as.character(key),conn=conn),"Sites"))
+                print("displaying sites ")
+                print(sites)
                 sites <- t(sapply(sites,function(i)i[,c("SiteID","SiteName","Latitude","Longitude")]))
+                print("adding original info")
                 sites <- cbind.data.frame(sites, notes=paste0(primaryKey,": ",result[,primaryKey],","))
+                print("update map")
                 updateSitesOnMap(sites)
             }
 
