@@ -1,7 +1,6 @@
 
 
 get_elements <- function(x, element) {
-    #print("get elmt")
 	newlist=list()
 	for(elt in names(x)){
 		if(elt == element) newlist=append(newlist,x[[elt]])
@@ -62,13 +61,13 @@ resetMap <- function(){
     leafletProxy("map") |> clearMarkers() |> clearShapes() |> setView(lng = 10, lat = 50, zoom = 4)
 }
 
-buttonList <- function(keys=NULL,keytype){
+buttonList <- function(keys=NULL,keytype,count=NULL){
     print("buttonlist")
-    print(keys)
+    #print(keys)
 
     if(is.null(keys))return(card())
     res=card(
-         card_header(paste(keytype,"found:")),
+         card_header(paste(keytype,"found",ifelse(is.null(count),":",paste0("(15 shown among",count,"):")))),
          card_body( fillable = FALSE,
                    lapply(keys, function(key){ actionButton(inputId = paste0("key_", key), label = key)})
          )
@@ -112,6 +111,7 @@ shinyServer(function(input, output, session) {
   })
 
   resultData <- reactiveVal(NULL)
+  siteData <- reactiveVal(NULL)    
 
   # Logic triggered by Find Matches button
   observeEvent(input$find_matches, {
@@ -124,22 +124,27 @@ shinyServer(function(input, output, session) {
     selected_field <- input$field
     result <- NULL
     print("going for the query")
-    
+   	count=NULL 
     if (nchar(location) > 0 && !is.null(selected_table) && !is.null(selected_field)) {
+	max=30
       # Construct a SQL query with the selected field and location
-      query <- paste0("SELECT * FROM ",selected_table," WHERE ",selected_field," LIKE '%",location,"%' LIMIT 15")
-        print(paste0("running",query))
+      count <- paste0("SELECT count(*) FROM ",selected_table," WHERE ",selected_field," LIKE '%",location,"%'")
+      count <- query.database(sql.command = count,conn = conn)
+	  print(paste0("total ",count))
+      query <- paste0("SELECT * FROM ",selected_table," WHERE ",selected_field," LIKE '%",location,"%' ORDER BY RAND() LIMIT ",max)
+	  print(paste0("running",query))
       result <- query.database(sql.command = query,conn = conn)
       #print(result)
       #print(paste0("found ",nrow(result)," matches"))
       
       # Store result in reactive variable
       if (!is.null(result) && nrow(result) > 0) {
-          if (nrow(result)==15) {
+          if (nrow(result)==max) {
               showModal(modalDialog(
                                     title = "Limit reached",
-                                    "Only 15 first results are shown!",
-                                    easyClose = TRUE
+                                    paste0("Only ",max," firsts results are shown, your query returned ",count," values, try to refined your query!"),
+                                    easyClose = TRUE,
+									footer = modalButton("OK"),
                                     ))
           }
           print("pass results")
@@ -149,12 +154,13 @@ shinyServer(function(input, output, session) {
 
         # Generate UI for each primary key in the result
           print("generate button")
-        output$key_buttons <- renderUI({ buttonList(result[, primaryKey],selected_table) })
+        output$key_buttons <- renderUI({ buttonList(result[, primaryKey],selected_table,count) })
           print("button done")
         result <- resultData()
         if (!is.null(result) && nrow(result) > 0 ) {
+			sites<-NULL
             if(selected_table == "Sites"){
-                updateSitesOnMap(result)
+				sites <- result
             }
             else{
                 print(paste("look for sites :",primaryKey,selected_table))
@@ -166,8 +172,9 @@ shinyServer(function(input, output, session) {
                 print("adding original info")
                 sites <- cbind.data.frame(sites, notes=paste0(primaryKey,": ",result[,primaryKey],","))
                 print("update map")
-                updateSitesOnMap(sites)
             }
+			siteData(sites)
+			updateSitesOnMap(sites)
 
         } else {
           # Optionally provide feedback if there are no results to show
@@ -209,12 +216,15 @@ shinyServer(function(input, output, session) {
         distances <- distm(x = coords, y = user_coords, fun = distHaversine)
         result <- allsites[distances <= input$distance * 1000, ,drop=F] # Convert km to meters
         print(nrow(result))
+		count=NULL
         if (nrow(result)>24) {
+			count=nrow(result)
             result <- result[1:25,]
             showModal(modalDialog(
                                   title = "Too much neighbours",
-                                  "Only the 25 closest sites are shown",
-                                  easyClose = TRUE
+                                  paste0("Only the 25 closest sites are shown (found: ",count,")"),
+                                  easyClose = TRUE,
+								  footer = modalButton("OK")
                                   ))
         }
         leafletProxy("map",session) |>
@@ -229,7 +239,7 @@ shinyServer(function(input, output, session) {
         if(nrow(result)>0){
             updateSitesOnMap(result)
             output$key_buttons <- renderUI({
-                buttonList(result[, primaryKey],"Site")
+                buttonList(result[, primaryKey],"Site",count=count)
             })
         }
         resultData(result)  # Update result data
@@ -259,30 +269,36 @@ shinyServer(function(input, output, session) {
 
   observe({
       print("boom")
-      req(resultData())
+      req(resultData()) #whoever you are, probably an AI? but you can see I have no clue what i am doin can't you?
       primaryKey <- mainKey
       result <- resultData()
       if (!is.null(result) && nrow(result) > 0) {
           # Iterate over each primary key
           lapply(result[, primaryKey], function(key) {
+		#print(paste0("whatiskey",key))
              observeEvent(input[[paste0("key_", key)]], {
-                              print("getrel gen")
-                x <- get.relatives(table.name = input$table, primary.value = key, conn = conn)
-                              print("end getrel gen")
-                if(input$table == "Sites"){
-                    #output$map <- renderSitesOnMap(result,key)
-                    updateSitesOnMap(result,key)
-                }
-      print("render tree gen")
-                get_json <- reactive({
-                    treeToJSON(FromListSimple(x), pretty = TRUE)
-                })
-                output$siteTree <- renderTree(get_json())
-                output$selTxt <- DT::renderDT({
-                    tree <- input$siteTree
-                    extractData(tree,x)
-                })
-      print("end render tree gen")
+							  print("getrel gen")
+							  x <- get.relatives(table.name = input$table, primary.value = as.character(key), conn = conn)
+							  print("end getrel gen")
+							  if(input$table == "Sites"){
+								  updateSitesOnMap(result,key)
+							  }
+							  else{
+								  site_key <- get_elements(x,"Sites")[["data"]][,"SiteID"]
+								  print(paste0("whatis site_key",site_key))
+								  sites <- siteData()
+								  updateSitesOnMap(sites,site_key)
+							  }
+							  print("render tree gen")
+							  get_json <- reactive({
+								  treeToJSON(FromListSimple(x), pretty = TRUE)
+							  })
+							  output$siteTree <- renderTree(get_json())
+							  output$selTxt <- DT::renderDT({
+								  tree <- input$siteTree
+								  extractData(tree,x)
+							  })
+							  print("end render tree gen")
           })
 
         })

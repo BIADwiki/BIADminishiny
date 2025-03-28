@@ -7,9 +7,12 @@ library(shinycssloaders)
 
 ui <- page_fluid(
   title="BIAD mini shiny",
+ theme = bs_theme(
+     base_font = font_google("Inter"),
+   ),
   titlePanel(
     title = div(
-      img(src = "https://biadwiki.org/biad.logo.png", height = "60px", style = "margin-right: 10px;"),
+      a(href="http://biadwiki.org:3838/BIADminishiny/",img(src = "https://biadwiki.org/biad.logo.png", height = "60px", style = "margin-right: 10px;")),
       "A minimal Shiny app for BIAD"
     ) ,
      #bg = "black"

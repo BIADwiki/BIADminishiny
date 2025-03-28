@@ -33,7 +33,7 @@ get_field_list <- function(conn, table) {
 conn <<- init.conn()
 allsites=tryCatch(
      readRDS("../data/sites_table.RDS")
- ,error=function(e){
+	 ,error=function(e){
      query.database("SELECT * FROM Sites;",conn=conn)
 })
 coords <- cbind(allsites$Longitude, allsites$Latitude)
