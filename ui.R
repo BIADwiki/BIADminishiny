@@ -41,8 +41,8 @@ ui <- page_fluid(
         )
       ),
         card(
-            uiOutput("key_buttons"), # Output for clickable primary key buttons
-            withSpinner(shinyTree("siteTree"))
+            withSpinner(uiOutput("key_buttons")), # Output for clickable primary key buttons
+            shinyTree("siteTree")
         ),
     ),      
     
